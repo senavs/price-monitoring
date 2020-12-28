@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+
+  mysql:
+    image: mysql:5.7
+    container_name: pricemonitoring-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: toor
+      MYSQL_DATABASE: PRICE_MONITORING
+    ports:
+      - 3306:3306
+
+  api:
+    image: pricemonitoring-api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: pricemonitoring-api
+    restart: unless-stopped
+    command: python3 -m api
+    environment:
+      GUNICORN_RELOAD: "true"
+      UVICORN_RELOAD: "true"
+    volumes:
+      - ./api/api:/code/api/api
+    ports:
+      - 8080:8080
