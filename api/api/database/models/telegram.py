@@ -9,7 +9,6 @@ class Telegram(DeclarativeBase, BaseModel):
 
     ID_TELEGRAM = Column(Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     ID_USER = Column(ForeignKey('USER.ID_USER', ondelete='CASCADE'), nullable=False, unique=False)
-    TOKEN = Column(String(64), nullable=False, unique=False)
-    CHAT_ID = Column(Integer, nullable=False, unique=False)
+    CHAT_ID = Column(String(32), nullable=False, unique=False)
 
     user = relationship('User', backref=backref('telegrams', cascade='all,delete', lazy='dynamic'))

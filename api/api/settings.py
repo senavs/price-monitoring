@@ -19,5 +19,8 @@ class PriceMonitoringSettings(BaseSettings):
 
     TASK_GET_PRICE_SECONDS: int = 60
 
+    TELEGRAM_SEND_MESSAGE_URI: str = 'https://api.telegram.org/bot%BOT_TOKEN%/sendMessage?chat_id=%CHAT_ID%&text=%MESSAGE%'
+    TELEGRAM_BOT_TOKEN: str
+
 
 envs = PriceMonitoringSettings()

@@ -3,7 +3,7 @@ from requests import HTTPError
 
 from ..database import ClientConnection, WebSite, Price
 from ..settings import envs
-from ..modules.scrapper import get_html, get_element, to_float_currency
+from ..services.scrapper import get_html, get_element, to_float_currency
 
 app = Celery('price-monitoring', broker=envs.BROKER_URI)
 

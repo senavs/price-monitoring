@@ -37,6 +37,7 @@ services:
     environment:
       GUNICORN_RELOAD: "true"
       UVICORN_RELOAD: "true"
+      TELEGRAM_BOT_TOKEN: $TELEGRAM_BOT_TOKEN
     volumes:
       - ./api/api:/code/api/api
     ports:
@@ -50,6 +51,8 @@ services:
     container_name: pricemonitoring-worker
     restart: unless-stopped
     command: celery -A api.queue_manager.tasks worker --loglevel=INFO
+    environment:
+      TELEGRAM_BOT_TOKEN: $TELEGRAM_BOT_TOKEN
     depends_on:
       - mysql
       - rabbitmq
@@ -59,6 +62,8 @@ services:
     container_name: pricemonitoring-beat
     restart: unless-stopped
     command: celery -A api.queue_manager.beats beat --loglevel=INFO
+    environment:
+      TELEGRAM_BOT_TOKEN: $TELEGRAM_BOT_TOKEN
     depends_on:
       - mysql
       - rabbitmq
