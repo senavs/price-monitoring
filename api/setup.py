@@ -1,6 +1,9 @@
 from setuptools import find_packages, setup
 
 run_requirements = [
+    'requests==2.25.1',
+    'beautifulsoup4==4.9.3',
+    'celery==5.0.5',
     'starlette==0.13.6',
     'pydantic==1.7.3',
     'fastapi==0.63.0',

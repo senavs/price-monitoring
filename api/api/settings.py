@@ -15,5 +15,9 @@ class PriceMonitoringSettings(BaseSettings):
     DATABASE_URI: str = 'mysql://root:toor@mysql:3306/PRICE_MONITORING'
     DATABASE_RESET: bool = False
 
+    BROKER_URI: str = 'amqp://root:toor@rabbitmq:5672'
+
+    TASK_GET_PRICE_SECONDS: int = 60
+
 
 envs = PriceMonitoringSettings()

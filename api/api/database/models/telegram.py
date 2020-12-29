@@ -12,4 +12,4 @@ class Telegram(DeclarativeBase, BaseModel):
     TOKEN = Column(String(64), nullable=False, unique=False)
     CHAT_ID = Column(Integer, nullable=False, unique=False)
 
-    user = relationship('User', backref=backref('telegrams', cascade='delete;all'))
+    user = relationship('User', backref=backref('telegrams', cascade='all,delete', lazy='dynamic'))

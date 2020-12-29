@@ -14,4 +14,4 @@ class Price(DeclarativeBase, BaseModel):
     ACCESSED = Column(Boolean, nullable=False, unique=False)
     CREATED_AT = Column(DateTime, nullable=False, unique=False, default=func.now())
 
-    website = relationship('WebSite', backref=backref('prices', cascade='delete;all'))
+    website = relationship('WebSite', backref=backref('prices', cascade='all,delete', lazy='dynamic'))

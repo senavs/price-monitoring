@@ -2,6 +2,18 @@ version: '3'
 
 services:
 
+  rabbitmq:
+    image: rabbitmq:3
+    container_name: pricemonitoring-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: root
+      RABBITMQ_DEFAULT_PASS: toor
+    ports:
+      - 5672:5672
+    logging:
+      driver: none
+
   mysql:
     image: mysql:5.7
     container_name: pricemonitoring-mysql
@@ -11,6 +23,8 @@ services:
       MYSQL_DATABASE: PRICE_MONITORING
     ports:
       - 3306:3306
+    logging:
+      driver: none
 
   api:
     image: pricemonitoring-api
@@ -19,7 +33,7 @@ services:
       dockerfile: Dockerfile
     container_name: pricemonitoring-api
     restart: unless-stopped
-    command: python3 -m api
+    command: python3 -m api  # TODO: remove it
     environment:
       GUNICORN_RELOAD: "true"
       UVICORN_RELOAD: "true"
@@ -27,3 +41,24 @@ services:
       - ./api/api:/code/api/api
     ports:
       - 8080:8080
+    depends_on:
+      - mysql
+      - rabbitmq
+
+  worker:
+    image: pricemonitoring-api
+    container_name: pricemonitoring-worker
+    restart: unless-stopped
+    command: celery -A api.queue_manager.tasks worker --loglevel=INFO
+    depends_on:
+      - mysql
+      - rabbitmq
+
+  beat:
+    image: pricemonitoring-api
+    container_name: pricemonitoring-beat
+    restart: unless-stopped
+    command: celery -A api.queue_manager.beats beat --loglevel=INFO
+    depends_on:
+      - mysql
+      - rabbitmq
