@@ -8,6 +8,8 @@ class Website(BaseModel):
     css_selector_in_cash_price: str
     css_selector_installment_price: str
     is_brazil_currency: bool
+    notify_le: float = None
+    notify_ge: float = None
 
 
 class WebsiteResponseList(BaseModel):
@@ -29,3 +31,5 @@ class WebsiteRequestCreate(BaseModel):
     css_selector_in_cash_price: str
     css_selector_installment_price: str
     is_brazil_currency: bool = True
+    notify_le: float = None
+    notify_ge: float = None

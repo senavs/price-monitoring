@@ -36,11 +36,7 @@ def to_float_currency(currency: str, brazil_currency: bool = True) -> Decimal:
         return Decimal('0.')
     if brazil_currency:
         currency = RE_BR_CURRENCY.sub('', currency)
-        currency = re.sub(r',', '../modules', currency)
+        currency = re.sub(r',', '.', currency)
     else:
         currency = RE_US_CURRENCY.sub('', currency)
     return Decimal(currency)
-
-
-if __name__ == '__main__':
-    get_html('https://www.google.com/notfound')
