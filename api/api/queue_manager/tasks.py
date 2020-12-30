@@ -17,26 +17,23 @@ def get_price():
         skip, limit = 0, 100
 
         while websites := conn.query(WebSite).offset(skip).limit(limit).all():
+
             for website in websites:
-                # get website config information
-                id_website = website.ID_WEBSITE
-                url = website.URL
-                css_selector_in_cash = website.CSS_SELECTOR_IN_CASH_PRICE
-                css_selector_installment = website.CSS_SELECTOR_INSTALLMENT_PRICE
-                is_brazil_currency = website.IS_BRAZIL_CURRENCY
-
-                # do scrapper
-                try:
-                    html = get_html(url)
-                except HTTPError:
-                    price = Price(ID_WEBSITE=id_website, IN_CASH_PRICE=0., INSTALLMENT_PRICE=0., ACCESSED=False)
+                if not (price := website.price):
+                    price = Price(ID_WEBSITE=website.ID_WEBSITE, IN_CASH_PRICE=None, INSTALLMENT_PRICE=None, REACHED=False, NOTIFIED=False)
                     price.insert(conn)
-                else:
-                    in_cash_price = to_float_currency(get_element(html, css_selector_in_cash), is_brazil_currency)
-                    installment_price = to_float_currency(get_element(html, css_selector_installment), is_brazil_currency)
-                    price = Price(ID_WEBSITE=id_website, IN_CASH_PRICE=in_cash_price, INSTALLMENT_PRICE=installment_price, ACCESSED=True)
 
-                price.insert(conn)
+                try:
+                    html = get_html(website.URL)
+                except HTTPError:
+                    pass
+                else:
+                    in_cash_price = to_float_currency(get_element(html, website.CSS_SELECTOR_IN_CASH_PRICE), website.IS_BRAZIL_CURRENCY)
+                    installment_price = to_float_currency(get_element(html, website.CSS_SELECTOR_INSTALLMENT_PRICE), website.IS_BRAZIL_CURRENCY)
+
+                    if price.IN_CASH_PRICE != float(in_cash_price) or price.INSTALLMENT_PRICE != float(installment_price):
+                        price.update(conn, IN_CASH_PRICE=in_cash_price, INSTALLMENT_PRICE=installment_price, REACHED=True, NOTIFIED=False)
+
                 send_message(price.ID_PRICE)
 
             skip += limit
@@ -45,26 +42,34 @@ def get_price():
 @app.task(name='send_message')
 def send_message(id_price: int):
     with ClientConnection() as conn:
-        if not (price := Price.get(conn, id=id_price)):
+        price = Price.get(conn, id=id_price)
+        website = price.website
+
+        if price.NOTIFIED:
             return
 
-        url = price.website.URL
-        id_user = price.website.ID_USER
         notify_ge, notify_le = price.website.NOTIFY_GE, price.website.NOTIFY_LE
 
-        for telegram in conn.query(Telegram).filter_by(ID_USER=id_user).all():
-            chat_id = telegram.CHAT_ID
+        for chat_id, *_ in conn.query(Telegram.CHAT_ID).filter_by(ID_USER=website.ID_USER).all():
+            notified = False
 
             # notify if price is less or equal
             if notify_le is not None:
-                if price.IN_CASH_PRICE <= notify_le:
-                    send_predefined_message(chat_id, MessagesEnum.IN_CASH_LE, url=url, price=price.IN_CASH_PRICE, notify_price=notify_le)
-                if price.INSTALLMENT_PRICE <= notify_le:
-                    send_predefined_message(chat_id, MessagesEnum.INSTALLMENT_LE, url=url, price=price.INSTALLMENT_PRICE, notify_price=notify_le)
+                if price.IN_CASH_PRICE and price.IN_CASH_PRICE <= notify_le:
+                    send_predefined_message(chat_id, MessagesEnum.IN_CASH_LE, url=website.URL, price=price.IN_CASH_PRICE, notify_price=notify_le)
+                    notified = True
+                if price.INSTALLMENT_PRICE and price.INSTALLMENT_PRICE <= notify_le:
+                    send_predefined_message(chat_id, MessagesEnum.INSTALLMENT_LE, url=website.URL, price=price.INSTALLMENT_PRICE, notify_price=notify_le)
+                    notified = True
 
             # notify if price is greater or equal
             if notify_ge is not None:
-                if price.IN_CASH_PRICE >= notify_ge:
-                    send_predefined_message(chat_id, MessagesEnum.IN_CASH_GE, url=url, price=price.IN_CASH_PRICE, notify_price=notify_ge)
-                if price.INSTALLMENT_PRICE >= notify_ge:
-                    send_predefined_message(chat_id, MessagesEnum.INSTALLMENT_GE, url=url, price=price.INSTALLMENT_PRICE, notify_price=notify_ge)
+                if price.IN_CASH_PRICE and price.IN_CASH_PRICE >= notify_ge:
+                    send_predefined_message(chat_id, MessagesEnum.IN_CASH_GE, url=website.URL, price=price.IN_CASH_PRICE, notify_price=notify_ge)
+                    notified = True
+                if price.INSTALLMENT_PRICE and price.INSTALLMENT_PRICE >= notify_ge:
+                    send_predefined_message(chat_id, MessagesEnum.INSTALLMENT_GE, url=website.URL, price=price.INSTALLMENT_PRICE, notify_price=notify_ge)
+                    notified = True
+
+            if notified:
+                price.update(conn, NOTIFIED=True)
